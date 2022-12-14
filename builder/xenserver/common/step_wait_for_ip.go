@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
@@ -30,6 +31,7 @@ func (self *StepWaitForIP) Run(ctx context.Context, state multistep.StateBag) mu
 	}
 
 	var ip string
+	var ipPrefix string = "169"
 	err = InterruptibleWait{
 		Timeout:           self.Timeout,
 		PredicateInterval: 5 * time.Second,
@@ -62,9 +64,11 @@ func (self *StepWaitForIP) Run(ctx context.Context, state multistep.StateBag) mu
 					networks := metrics.Networks
 					var ok bool
 					if ip, ok = networks["0/ip"]; ok {
-						if ip != "" {
+						if ip != "" && !strings.HasPrefix(ip, ipPrefix) {
 							ui.Message(fmt.Sprintf("Got IP '%s' from XenServer tools", ip))
 							return true, nil
+						} else {
+							ui.Message(fmt.Sprintf("The currently assigned IP address from XenServer tools is:'%s'. This IP address will be discarded. ", ip))
 						}
 					}
 				}
